@@ -71,7 +71,7 @@ def get_host_info(repository_ctx):
 
     supported_architectures = {
         "linux": ["aarch64", "x86_64"],
-        "macos": ["aarch64", "x86_64"],
+        "macos": ["arm64", "x86_64"],
         "windows": ["x86_64"],
     }
 
