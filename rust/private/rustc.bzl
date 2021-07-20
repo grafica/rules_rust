@@ -57,6 +57,11 @@ ErrorFormatInfo = provider(
     fields = {"error_format": "(string) [" + ", ".join(_error_format_values) + "]"},
 )
 
+ExtraCodegenInfo = provider(
+    doc = "Pass additional --codegen arguments for each value",
+    fields = {"extra_codegen": "List[string] Extra codegen arguments to pass"},
+)
+
 def _get_rustc_env(attr, toolchain):
     """Gathers rustc environment variables
 
@@ -424,6 +429,8 @@ def construct_arguments(
     compilation_mode = get_compilation_mode_opts(ctx, toolchain)
     args.add("--codegen=opt-level=" + compilation_mode.opt_level)
     args.add("--codegen=debuginfo=" + compilation_mode.debug_info)
+    if hasattr(ctx.attr, "_extra_codegen") and crate_info.type != "proc-macro":
+        args.add_all(["--codegen=" + x for x in ctx.attr._extra_codegen[ExtraCodegenInfo].extra_codegen])
 
     # For determinism to help with build distribution and such
     args.add("--remap-path-prefix=${pwd}=.")
@@ -966,10 +973,23 @@ def _error_format_impl(ctx):
 
 error_format = rule(
     doc = (
-        "A helper rule for controlling the rustc " +
-        "[--error-format](https://doc.rust-lang.org/rustc/command-line-arguments.html#option-error-format) " +
-        "flag."
+        "Change the [--error-format](https://doc.rust-lang.org/rustc/command-line-arguments.html#option-error-format) " +
+        "flag from the command line with `--@rules_rust//:error_format`. See rustc documentation for valid values."
     ),
     implementation = _error_format_impl,
     build_setting = config.string(flag = True),
+)
+
+def _extra_codegen_impl(ctx):
+    return ExtraCodegenInfo(extra_codegen = ctx.build_setting_value)
+
+extra_codegen = rule(
+    doc = (
+        "Add additional [--codegen](https://doc.rust-lang.org/rustc/codegen-options/index.html) " +
+        "options from the command line with `--@rules_rust//:extra_codegen`. See rustc documentation for valid values. " +
+        "This flag should only be used for flags that need to be applied across the entire build. For options that " +
+        "apply to individual crates, use the rustc_flags attribute on the individual crate's rule instead."
+    ),
+    implementation = _extra_codegen_impl,
+    build_setting = config.string_list(flag = True),
 )

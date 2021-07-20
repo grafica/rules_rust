@@ -1,5 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("//rust:rust.bzl", "error_format")
+load("//rust:rust.bzl", "error_format", "extra_codegen")
 
 exports_files(["LICENSE"])
 
@@ -22,6 +22,14 @@ error_format(
 label_flag(
     name = "clippy.toml",
     build_setting_default = "//tools/clippy:clippy.toml",
+    visibility = ["//visibility:public"],
+)
+
+# This setting may be used to pass codegen options to rustc from the command line.
+# See https://doc.rust-lang.org/rustc/codegen-options/index.html for values.
+extra_codegen(
+    name = "extra_codegen",
+    build_setting_default = [],
     visibility = ["//visibility:public"],
 )
 
