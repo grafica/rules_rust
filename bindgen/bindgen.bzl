@@ -16,10 +16,10 @@
 load("//rust:rust.bzl", "rust_library")
 
 # buildifier: disable=bzl-visibility
-load("//rust/private:utils.bzl", "find_cc_toolchain", "find_toolchain", "get_preferred_artifact")
+load("//rust/private:rustc.bzl", "get_linker_and_args")
 
 # buildifier: disable=bzl-visibility
-load("//rust/private:rustc.bzl", "get_linker_and_args")
+load("//rust/private:utils.bzl", "find_cc_toolchain", "find_toolchain", "get_preferred_artifact")
 
 # TODO(hlopko): use the more robust logic from rustc.bzl also here, through a reasonable API.
 def _get_libs_for_static_executable(dep):
@@ -194,14 +194,14 @@ rust_bindgen = rule(
             doc = "The .h file to generate bindings for.",
             allow_single_file = True,
         ),
+        "_cc_toolchain": attr.label(
+            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+        ),
         "_process_wrapper": attr.label(
             default = Label("//util/process_wrapper"),
             executable = True,
             allow_single_file = True,
             cfg = "exec",
-        ),
-        "_cc_toolchain": attr.label(
-            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
     },
     outputs = {"out": "%{name}.rs"},
