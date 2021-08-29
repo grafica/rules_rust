@@ -16,7 +16,7 @@
 load("//rust:rust.bzl", "rust_library")
 
 # buildifier: disable=bzl-visibility
-load("//rust/private:utils.bzl", "find_toolchain", "find_cc_toolchain", "get_preferred_artifact")
+load("//rust/private:utils.bzl", "find_cc_toolchain", "find_toolchain", "get_preferred_artifact")
 load("//rust/private:rustc.bzl", "get_linker_and_args")
 
 # TODO(hlopko): use the more robust logic from rustc.bzl also here, through a reasonable API.
@@ -112,8 +112,6 @@ def _rust_bindgen_impl(ctx):
     else:
         unformatted_output = output
 
-    cc_toolchain, feature_configuration = find_cc_toolchain(ctx)
-
     args = ctx.actions.args()
     args.add_all(bindgen_args)
     args.add(header.path)
@@ -129,6 +127,7 @@ def _rust_bindgen_impl(ctx):
         "LIBCLANG_PATH": libclang_dir,
         "RUST_BACKTRACE": "1",
     }
+    cc_toolchain, feature_configuration = find_cc_toolchain(ctx)
     _, _, linker_env = get_linker_and_args(ctx, ctx.attr, cc_toolchain, feature_configuration, None)
     env.update(**linker_env)
 
