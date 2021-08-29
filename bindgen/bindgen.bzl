@@ -17,6 +17,8 @@ load("//rust:rust.bzl", "rust_library")
 
 # buildifier: disable=bzl-visibility
 load("//rust/private:utils.bzl", "find_cc_toolchain", "find_toolchain", "get_preferred_artifact")
+
+# buildifier: disable=bzl-visibility
 load("//rust/private:rustc.bzl", "get_linker_and_args")
 
 # TODO(hlopko): use the more robust logic from rustc.bzl also here, through a reasonable API.
