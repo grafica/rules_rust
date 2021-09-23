@@ -191,12 +191,13 @@ def get_cc_user_link_flags(ctx):
     """
     return ctx.fragments.cpp.linkopts
 
-def get_linker_and_args(ctx, attr, cc_toolchain, feature_configuration, rpaths):
+def get_linker_and_args(ctx, attr, toolchain, cc_toolchain, feature_configuration, rpaths):
     """Gathers cc_common linker information
 
     Args:
         ctx (ctx): The current target's context object
         attr (struct): Attributes to use in gathering linker args
+        toolchain (rust_toolchain): The current `rust_toolchain`.
         cc_toolchain (CcToolchain): cc_toolchain for which we are creating build variables.
         feature_configuration (FeatureConfiguration): Feature configuration to be queried.
         rpaths (depset): Depset of directories where loader will look for libraries at runtime.
@@ -217,6 +218,9 @@ def get_linker_and_args(ctx, attr, cc_toolchain, feature_configuration, rpaths):
             for linker_input in dep[CcInfo].linking_context.linker_inputs.to_list():
                 for flag in linker_input.user_link_flags:
                     user_link_flags.append(flag)
+
+    user_link_flags.extend(toolchain.stdlib_linkflags)
+
     link_variables = cc_common.create_link_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
@@ -490,7 +494,7 @@ def construct_arguments(
         # linker since it won't understand.
         if toolchain.target_arch != "wasm32":
             rpaths = _compute_rpaths(toolchain, output_dir, dep_info)
-            ld, link_args, link_env = get_linker_and_args(ctx, attr, cc_toolchain, feature_configuration, rpaths)
+            ld, link_args, link_env = get_linker_and_args(ctx, attr, toolchain, cc_toolchain, feature_configuration, rpaths)
             env.update(link_env)
             rustc_flags.add("--codegen=linker=" + ld)
             rustc_flags.add_joined("--codegen", link_args, join_with = " ", format_joined = "link-args=%s")
@@ -716,7 +720,6 @@ def establish_cc_info(ctx, attr, crate_info, toolchain, cc_toolchain, feature_co
     link_input = cc_common.create_linker_input(
         owner = ctx.label,
         libraries = depset([library_to_link]),
-        user_link_flags = depset(toolchain.stdlib_linkflags),
     )
 
     linking_context = cc_common.create_linking_context(
