@@ -1,0 +1,4 @@
+load(":platform_link_flags_test.bzl", "platform_link_flags_test_suite")
+
+############################# UNIT TESTS ##############################
+platform_link_flags_test_suite(name = "platform_link_flags_test_suite")
