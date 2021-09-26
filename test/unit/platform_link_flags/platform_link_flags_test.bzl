@@ -1,4 +1,4 @@
-"""Unittest to verify location expansion in rustc flags"""
+"""Unittest to verify deduplicated platform link args"""
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("//rust:rust.bzl", "rust_library")
