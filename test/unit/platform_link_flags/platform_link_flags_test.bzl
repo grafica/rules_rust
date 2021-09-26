@@ -1,8 +1,8 @@
 """Unittest to verify location expansion in rustc flags"""
 
-load("@bazel_skylib//lib:unittest.bzl", "analysistest")
+load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("//rust:rust.bzl", "rust_library")
-load("//test/unit:common.bzl", "assert_action_mnemonic", "assert_argv_contains")
+load("//test/unit:common.bzl", "assert_action_mnemonic")
 
 def _cdylib_platform_link_flags_test(ctx):
     env = analysistest.begin(ctx)
@@ -10,8 +10,17 @@ def _cdylib_platform_link_flags_test(ctx):
     action = tut.actions[0]
     argv = action.argv
     assert_action_mnemonic(env, action, "Rustc")
+
+    # check that lpthread appears just once
     if "--target=x86_64-unknown-linux-gnu" in action.argv:
-        assert_argv_contains(env, action, "link-args=-fuse-ld=gold -Wl,-no-as-needed -Wl,-z,relro,-z,now -B/usr/bin -pass-exit-codes -ldl -lpthread -lstdc++ -lm")
+        for flag in action.argv:
+            if flag.startswith("link-args="):
+                asserts.true(
+                    env,
+                    flag.count("-lpthread") == 1,
+                    "Expected link-args to contain '-lpthread' once.",
+                )
+
     return analysistest.end(env)
 
 platform_link_flags_test = analysistest.make(_cdylib_platform_link_flags_test)
