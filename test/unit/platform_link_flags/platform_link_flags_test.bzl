@@ -8,19 +8,19 @@ def _is_running_on_linux(ctx):
     return ctx.target_platform_has_constraint(ctx.attr._linux[platform_common.ConstraintValueInfo])
 
 def _check_for_link_flag(env, ctx, action):
-    # check that lpthread appears just once
-    if _is_running_on_linux(ctx):
-        for flag in action.argv:
-            if flag.startswith("link-args="):
-                asserts.true(
-                    env,
-                    flag.count("-lpthread") == 1,
-                    "Expected link-args to contain '-lpthread' once.",
-                )
-                return True
-        return False
-    else:
+    if not _is_running_on_linux(ctx):
         return True
+
+    # check that lpthread appears just once
+    for flag in action.argv:
+        if flag.startswith("link-args="):
+            asserts.true(
+                env,
+                flag.count("-lpthread") == 1,
+                "Expected link-args to contain '-lpthread' once.",
+            )
+            return True
+    return False
 
 def _platform_link_flags_test_impl(ctx):
     env = analysistest.begin(ctx)
