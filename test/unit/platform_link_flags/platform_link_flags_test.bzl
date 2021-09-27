@@ -72,6 +72,11 @@ def _platform_link_flags_test():
         ],
     )
 
+    rust_binary(
+        name = "binary_with_no_deps",
+        srcs = ["main.rs"],
+    )
+
     platform_link_flags_test(
         name = "platform_link_flags_test",
         target_under_test = ":library_cdylib",
@@ -80,6 +85,11 @@ def _platform_link_flags_test():
     platform_link_flags_test(
         name = "platform_link_flags_rust_binary_test",
         target_under_test = ":binary",
+    )
+
+    platform_link_flags_test(
+        name = "platform_link_flags_rust_binary_no_deps_test",
+        target_under_test = ":binary_with_no_deps",
     )
 
 def platform_link_flags_test_suite(name):
@@ -95,5 +105,6 @@ def platform_link_flags_test_suite(name):
         tests = [
             ":platform_link_flags_test",
             ":platform_link_flags_rust_binary_test",
+            ":platform_link_flags_rust_binary_no_deps_test",
         ],
     )
