@@ -1,10 +1,10 @@
 """Unittest to verify deduplicated platform link args"""
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
-load("//rust:defs.bzl", "rust_library", "rust_shared_library")
+load("//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library")
 load("//test/unit:common.bzl", "assert_action_mnemonic")
 
-def _cdylib_platform_link_flags_test(ctx):
+def _platform_link_flags_test_impl(ctx):
     env = analysistest.begin(ctx)
     tut = analysistest.target_under_test(env)
     action = tut.actions[0]
@@ -23,7 +23,7 @@ def _cdylib_platform_link_flags_test(ctx):
 
     return analysistest.end(env)
 
-platform_link_flags_test = analysistest.make(_cdylib_platform_link_flags_test)
+platform_link_flags_test = analysistest.make(_platform_link_flags_test_impl)
 
 def _platform_link_flags_test():
     rust_library(
@@ -52,9 +52,24 @@ def _platform_link_flags_test():
         ],
     )
 
+    rust_binary(
+        name = "binary",
+        srcs = ["main.rs"],
+        deps = [
+            ":library_one",
+            ":library_two",
+            ":library_three",
+        ],
+    )
+
     platform_link_flags_test(
         name = "platform_link_flags_test",
         target_under_test = ":library_cdylib",
+    )
+
+    platform_link_flags_test(
+        name = "platform_link_flags_rust_binary_test",
+        target_under_test = ":binary",
     )
 
 def platform_link_flags_test_suite(name):
@@ -69,5 +84,6 @@ def platform_link_flags_test_suite(name):
         name = name,
         tests = [
             ":platform_link_flags_test",
+            ":platform_link_flags_rust_binary_test",
         ],
     )
