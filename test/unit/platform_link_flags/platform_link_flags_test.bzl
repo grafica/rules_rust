@@ -1,7 +1,7 @@
 """Unittest to verify deduplicated platform link args"""
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
-load("//rust:rust.bzl", "rust_library")
+load("//rust:defs.bzl", "rust_library", "rust_shared_library")
 load("//test/unit:common.bzl", "assert_action_mnemonic")
 
 def _cdylib_platform_link_flags_test(ctx):
@@ -41,11 +41,10 @@ def _platform_link_flags_test():
         srcs = ["library_three.rs"],
     )
 
-    rust_library(
+    rust_shared_library(
         name = "library_cdylib",
         srcs = ["cdylib.rs"],
         crate_root = "cdylib.rs",
-        crate_type = "cdylib",
         deps = [
             ":library_one",
             ":library_two",
