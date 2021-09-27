@@ -191,13 +191,13 @@ def get_cc_user_link_flags(ctx):
     """
     return ctx.fragments.cpp.linkopts
 
-def get_linker_and_args(ctx, attr, toolchain, cc_toolchain, feature_configuration, rpaths):
+def get_linker_and_args(ctx, attr, rust_toolchain, cc_toolchain, feature_configuration, rpaths):
     """Gathers cc_common linker information
 
     Args:
         ctx (ctx): The current target's context object
         attr (struct): Attributes to use in gathering linker args
-        toolchain (rust_toolchain): The current `rust_toolchain`.
+        rust_toolchain (rust_toolchain): The current `rust_toolchain`.
         cc_toolchain (CcToolchain): cc_toolchain for which we are creating build variables.
         feature_configuration (FeatureConfiguration): Feature configuration to be queried.
         rpaths (depset): Depset of directories where loader will look for libraries at runtime.
@@ -219,7 +219,7 @@ def get_linker_and_args(ctx, attr, toolchain, cc_toolchain, feature_configuratio
                 for flag in linker_input.user_link_flags:
                     user_link_flags.append(flag)
 
-    user_link_flags.extend(toolchain.stdlib_linkflags)
+    user_link_flags.extend(rust_toolchain.stdlib_linkflags)
 
     link_variables = cc_common.create_link_variables(
         feature_configuration = feature_configuration,
