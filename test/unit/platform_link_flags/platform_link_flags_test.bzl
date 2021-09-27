@@ -4,15 +4,12 @@ load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library")
 load("//test/unit:common.bzl", "assert_action_mnemonic")
 
-def _platform_link_flags_test_impl(ctx):
-    env = analysistest.begin(ctx)
-    tut = analysistest.target_under_test(env)
-    action = tut.actions[0]
-    argv = action.argv
-    assert_action_mnemonic(env, action, "Rustc")
+def _is_running_on_linux(ctx):
+    return ctx.target_platform_has_constraint(ctx.attr._linux[platform_common.ConstraintValueInfo])
 
+def _check_for_link_flag(env, ctx, action):
     # check that lpthread appears just once
-    if "--target=x86_64-unknown-linux-gnu" in action.argv:
+    if _is_running_on_linux(ctx):
         for flag in action.argv:
             if flag.startswith("link-args="):
                 asserts.true(
@@ -20,10 +17,21 @@ def _platform_link_flags_test_impl(ctx):
                     flag.count("-lpthread") == 1,
                     "Expected link-args to contain '-lpthread' once.",
                 )
+                return True
+    return False
 
+def _platform_link_flags_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    tut = analysistest.target_under_test(env)
+    action = tut.actions[0]
+    argv = action.argv
+    assert_action_mnemonic(env, action, "Rustc")
+    asserts.true(env, _check_for_link_flag(env, ctx, action))
     return analysistest.end(env)
 
-platform_link_flags_test = analysistest.make(_platform_link_flags_test_impl)
+platform_link_flags_test = analysistest.make(_platform_link_flags_test_impl, attrs = {
+    "_linux": attr.label(default = Label("@platforms//os:linux")),
+})
 
 def _platform_link_flags_test():
     rust_library(
