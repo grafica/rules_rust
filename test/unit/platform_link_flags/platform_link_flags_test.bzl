@@ -18,7 +18,9 @@ def _check_for_link_flag(env, ctx, action):
                     "Expected link-args to contain '-lpthread' once.",
                 )
                 return True
-    return False
+        return False
+    else:
+        return True
 
 def _platform_link_flags_test_impl(ctx):
     env = analysistest.begin(ctx)
