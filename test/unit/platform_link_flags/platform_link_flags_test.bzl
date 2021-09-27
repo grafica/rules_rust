@@ -92,6 +92,55 @@ def _platform_link_flags_test():
         target_under_test = ":binary_with_no_deps",
     )
 
+def _check_cpp_link_flags(env, ctx, tut):
+    for action in tut.actions:
+        if action.mnemonic == "CppLink":
+            print(action.argv)
+            asserts.true(env, False)
+            return True
+    return False
+
+def _platform_link_flags_cc_binary_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    tut = analysistest.target_under_test(env)
+    _check_cpp_link_flags(env, ctx, tut)
+    return analysistest.end(env)
+
+platform_link_flags_cc_binary_test = analysistest.make(_platform_link_flags_cc_binary_test_impl, attrs = {
+    "_linux": attr.label(default = Label("@platforms//os:linux")),
+})
+
+def _platform_link_flags_cc_binary_test():
+    rust_library(
+        name = "library_one_for_cc",
+        srcs = ["library_one.rs"],
+    )
+
+    rust_library(
+        name = "library_two_for_cc",
+        srcs = ["library_two.rs"],
+    )
+
+    rust_library(
+        name = "library_three_for_cc",
+        srcs = ["library_three.rs"],
+    )
+
+    native.cc_binary(
+        name = "cc_binary",
+        srcs = ["main.cc"],
+        deps = [
+            ":library_one_for_cc",
+            ":library_two_for_cc",
+            ":library_three_for_cc",
+        ],
+    )
+
+    platform_link_flags_cc_binary_test(
+        name = "platform_link_flags_cc_binary_test",
+        target_under_test = ":cc_binary",
+    )
+
 def platform_link_flags_test_suite(name):
     """Entry-point macro called from the BUILD file.
 
@@ -99,6 +148,7 @@ def platform_link_flags_test_suite(name):
         name: Name of the macro.
     """
     _platform_link_flags_test()
+    _platform_link_flags_cc_binary_test()
 
     native.test_suite(
         name = name,
@@ -106,5 +156,6 @@ def platform_link_flags_test_suite(name):
             ":platform_link_flags_test",
             ":platform_link_flags_rust_binary_test",
             ":platform_link_flags_rust_binary_no_deps_test",
+            ":platform_link_flags_cc_binary_test",
         ],
     )
