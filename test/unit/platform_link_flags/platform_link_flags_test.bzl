@@ -1,5 +1,6 @@
 """Unittest to verify deduplicated platform link args"""
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library")
@@ -15,6 +16,7 @@ def _check_for_link_flag(env, ctx, action):
     for flag in action.argv:
         if flag.startswith("link-args="):
             # check that lpthread appears just once
+            print(flag)
             asserts.true(
                 env,
                 flag.count("-lpthread") == 1,
@@ -48,13 +50,31 @@ def _platform_link_flags_test():
     cc_library(
         name = "linkopts_native_dep_a",
         srcs = ["native_dep.cc"],
-        linkopts = ["-lz"],
+        linkopts = selects.with_or({
+            (
+                "@rules_rust//rust/platform:i686-unknown-linux-gnu",
+                "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
+                "@rules_rust//rust/platform:aarch64-unknown-linux-gnu",
+            ): [
+                "-lz",
+            ],
+            "//conditions:default": [],
+        }),
         deps = [":linkopts_native_dep_b"],
     )
 
     cc_library(
         name = "linkopts_native_dep_b",
-        linkopts = ["-lrt"],
+        linkopts = selects.with_or({
+            (
+                "@rules_rust//rust/platform:i686-unknown-linux-gnu",
+                "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
+                "@rules_rust//rust/platform:aarch64-unknown-linux-gnu",
+            ): [
+                "-lrt",
+            ],
+            "//conditions:default": [],
+        }),
     )
 
     rust_binary(
