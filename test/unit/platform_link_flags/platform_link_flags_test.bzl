@@ -16,7 +16,6 @@ def _check_for_link_flag(env, ctx, action):
     for flag in action.argv:
         if flag.startswith("link-args="):
             # check that lpthread appears just once
-            print(flag)
             asserts.true(
                 env,
                 flag.count("-lpthread") == 1,
@@ -24,10 +23,10 @@ def _check_for_link_flag(env, ctx, action):
             )
 
             # check that -l flags added by crates below appear first
-            if flag.count("-lz") == 1 and flag.count("-lrt") == 1:
+            if flag.count("-lc") == 1 and flag.count("-lrt") == 1:
                 asserts.true(
                     env,
-                    flag.index("-lz") < flag.index("-ldl -lpthread") and flag.index("-lrt") < flag.index("-ldl -lpthread"),
+                    flag.index("-lc") < flag.index("-ldl -lpthread") and flag.index("-lrt") < flag.index("-ldl -lpthread"),
                     "Expected crate link arguments to appear first",
                 )
             return True
@@ -56,7 +55,7 @@ def _platform_link_flags_test():
                 "@rules_rust//rust/platform:x86_64-unknown-linux-gnu",
                 "@rules_rust//rust/platform:aarch64-unknown-linux-gnu",
             ): [
-                "-lz",
+                "-lc",
             ],
             "//conditions:default": [],
         }),
