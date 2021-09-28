@@ -4,7 +4,7 @@ load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library")
-load("//test/unit:common.bzl", "assert_action_mnemonic")
+load("//test/unit:common.bzl", "assert_action_mnemonic", "assert_argv_contains")
 
 def _is_running_on_linux(ctx):
     return ctx.target_platform_has_constraint(ctx.attr._linux[platform_common.ConstraintValueInfo])
@@ -144,9 +144,13 @@ def _platform_link_flags_test():
     )
 
 def _check_cpp_link_flags(env, ctx, tut):
+    if not _is_running_on_linux(ctx):
+        return True
+
     for action in tut.actions:
         if action.mnemonic == "CppLink":
-            asserts.true(env, False)
+            assert_argv_contains(env, action, "-ldl")
+            assert_argv_contains(env, action, "-lpthread")
             return True
     return False
 
@@ -198,7 +202,7 @@ def platform_link_flags_test_suite(name):
         name: Name of the macro.
     """
     _platform_link_flags_test()
-    #_platform_link_flags_cc_binary_test()
+    _platform_link_flags_cc_binary_test()
 
     native.test_suite(
         name = name,
@@ -207,6 +211,6 @@ def platform_link_flags_test_suite(name):
             ":platform_link_flags_rust_binary_test",
             ":platform_link_flags_rust_binary_no_deps_test",
             ":platform_link_flags_rust_binary_native_deps_test",
-            #":platform_link_flags_cc_binary_test",
+            ":platform_link_flags_cc_binary_test",
         ],
     )
