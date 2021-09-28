@@ -1,6 +1,7 @@
 """Unittest to verify deduplicated platform link args"""
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library")
 load("//test/unit:common.bzl", "assert_action_mnemonic")
 
@@ -11,14 +12,22 @@ def _check_for_link_flag(env, ctx, action):
     if not _is_running_on_linux(ctx):
         return True
 
-    # check that lpthread appears just once
     for flag in action.argv:
         if flag.startswith("link-args="):
+            # check that lpthread appears just once
             asserts.true(
                 env,
                 flag.count("-lpthread") == 1,
                 "Expected link-args to contain '-lpthread' once.",
             )
+
+            # check that -l flags added by crates below appear first
+            if flag.count("-lz") == 1 and flag.count("-lrt") == 1:
+                asserts.true(
+                    env,
+                    flag.index("-lz") < flag.index("-ldl -lpthread") and flag.index("-lrt") < flag.index("-ldl -lpthread"),
+                    "Expected crate link arguments to appear first",
+                )
             return True
     return False
 
@@ -36,6 +45,24 @@ platform_link_flags_test = analysistest.make(_platform_link_flags_test_impl, att
 })
 
 def _platform_link_flags_test():
+    cc_library(
+        name = "linkopts_native_dep_a",
+        srcs = ["native_dep.cc"],
+        linkopts = ["-lz"],
+        deps = [":linkopts_native_dep_b"],
+    )
+
+    cc_library(
+        name = "linkopts_native_dep_b",
+        linkopts = ["-lrt"],
+    )
+
+    rust_binary(
+        name = "linkopts_rust_bin",
+        srcs = ["bin_using_native_dep.rs"],
+        deps = [":linkopts_native_dep_a"],
+    )
+
     rust_library(
         name = "library_one",
         srcs = ["library_one.rs"],
@@ -92,10 +119,14 @@ def _platform_link_flags_test():
         target_under_test = ":binary_with_no_deps",
     )
 
+    platform_link_flags_test(
+        name = "platform_link_flags_rust_binary_native_deps_test",
+        target_under_test = ":linkopts_rust_bin",
+    )
+
 def _check_cpp_link_flags(env, ctx, tut):
     for action in tut.actions:
         if action.mnemonic == "CppLink":
-            print(action.argv)
             asserts.true(env, False)
             return True
     return False
@@ -126,7 +157,7 @@ def _platform_link_flags_cc_binary_test():
         srcs = ["library_three.rs"],
     )
 
-    native.cc_binary(
+    cc_binary(
         name = "cc_binary",
         srcs = ["main.cc"],
         deps = [
@@ -148,7 +179,7 @@ def platform_link_flags_test_suite(name):
         name: Name of the macro.
     """
     _platform_link_flags_test()
-    _platform_link_flags_cc_binary_test()
+    #_platform_link_flags_cc_binary_test()
 
     native.test_suite(
         name = name,
@@ -156,6 +187,7 @@ def platform_link_flags_test_suite(name):
             ":platform_link_flags_test",
             ":platform_link_flags_rust_binary_test",
             ":platform_link_flags_rust_binary_no_deps_test",
-            ":platform_link_flags_cc_binary_test",
+            ":platform_link_flags_rust_binary_native_deps_test",
+            #":platform_link_flags_cc_binary_test",
         ],
     )
